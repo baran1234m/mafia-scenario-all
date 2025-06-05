@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+  <meta charset="UTF-8">
+  <title>پنل داور - مافیا</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      direction: rtl;
+      padding: 20px;
+    }
+    .player-box {
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin: 10px 0;
+    }
+    img {
+      width: 150px;
+      height: 150px;
+    }
+    #game-id-box {
+      margin-top: 20px;
+      padding: 10px;
+      background-color: #f0f0f0;
+      border: 1px dashed #aaa;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎯 پنل داور بازی مافیا</h1>
+
+  <label>سناریو:
+    <select id="scenario-select">
+      <option value="">انتخاب سناریو</option>
+    </select>
+  </label>
+
+  <br><br>
+
+  <label>تعداد بازیکنان (10 تا 15):
+    <input type="number" id="playerCount" min="10" max="15" value="10">
+  </label>
+
+  <br><br>
+  <button onclick="startGame()">🎲 شروع بازی و تولید QR</button>
+
+  <div id="game-id-box" style="display: none;">
+    <strong>شناسه بازی:</strong> <span id="game-id" style="color: darkblue;"></span>
+  </div>
+
+  <h2>🎫 لیست بازیکنان</h2>
+  <div id="players"></div>
+
+  <script>
+    const api = location.origin;
+
+    async function loadScenarios() {
+      try {
+        const res = await fetch(`${api}/api/scenarios`);
+        const data = await res.json();
+        const select = document.getElementById("scenario-select");
+        data.forEach(s => {
+          const option = document.createElement("option");
+          option.value = s.name;
+          option.textContent = s.name;
+          select.appendChild(option);
+        });
+      } catch (error) {
+        console.error('خطا در بارگذاری سناریوها:', error);
+      }
+    }
+
+    async function startGame() {
+      const scenario = document.getElementById("scenario-select").value;
+      const playerCount = parseInt(document.getElementById("playerCount").value);
+
+      const res = await fetch(`${api}/assign`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scenario, playerCount })
+      });
+
+      const data = await res.json();
+      const div = document.getElementById("players");
+      div.innerHTML = "";
+
+      if (!data.results) {
+        div.textContent = data.error || "خطا در شروع بازی.";
+        return;
+      }
+
+      // نمایش شناسه بازی
+      document.getElementById("game-id-box").style.display = "block";
+      document.getElementById("game-id").textContent = data.game_id;
+
+      // نمایش اطلاعات بازیکنان
+      data.results.forEach(p => {
+        const box = document.createElement("div");
+        box.className = "player-box";
+        box.innerHTML = `
+          <strong>بازیکن ${p.player}</strong><br>
+          نقش: <b>${p.role}</b><br>
+          رمز ورود: <code>${p.password}</code><br>
+          <img src="${p.qrImage}"><br>
+          <a href="${p.link}" target="_blank">🔍 مشاهده نقش</a>
+        `;
+        div.appendChild(box);
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', loadScenarios);
+  </script>
+</body>
+</html>

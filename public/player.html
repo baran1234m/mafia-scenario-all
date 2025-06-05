@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+  <meta charset="UTF-8" />
+  <title>نمایش نقش شما</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; padding: 30px; direction: rtl; }
+    input { padding: 10px; margin: 10px; width: 200px; }
+  </style>
+</head>
+<body>
+  <h1>🎭 نمایش نقش بازیکن</h1>
+  <div id="form">
+    <input id="password" placeholder="رمز ورود را وارد کنید" autocomplete="off" /><br />
+    <button onclick="submitRole()">ورود</button>
+  </div>
+
+  <div id="role" style="display:none;">
+    <h2>نقش شما:</h2>
+    <h1 id="roleText" style="color: green;"></h1>
+  </div>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const game_id = urlParams.get('game_id');
+    const player_id = urlParams.get('player');
+
+    async function submitRole() {
+      const password = document.getElementById("password").value.trim();
+
+      if (!password) {
+        alert("لطفاً رمز ورود را وارد کنید");
+        return;
+      }
+      if (!game_id || !player_id) {
+        alert("پارامترهای بازی ناقص هستند.");
+        return;
+      }
+
+      try {
+        const res = await fetch('/get-role', {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ game_id, player_id, password })
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          alert(err.error || "خطایی رخ داد");
+          return;
+        }
+
+        const data = await res.json();
+
+        if (data.role) {
+          document.getElementById("form").style.display = "none";
+          document.getElementById("role").style.display = "block";
+          document.getElementById("roleText").textContent = data.role;
+        } else {
+          alert("رمز یا نقش نادرست است.");
+        }
+      } catch (error) {
+        alert("خطا در ارتباط با سرور");
+        console.error(error);
+      }
+    }
+  </script>
+</body>
+</html>
